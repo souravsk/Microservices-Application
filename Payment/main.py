@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.background import BackgroundTasks
 from redis_om import get_redis_connection, HashModel
+from starlette.requests import Request
+import requests,time
 
 app = FastAPI()
 
@@ -12,6 +15,8 @@ app.add_middleware(
     allow_headers=['*']
 )
 
+""" This database should we a new database because in microservices every services have differnt database """
+
 """ Connted the connetion with the database  """
 redis = get_redis_connection(
     host="redis-17648.c239.us-east-1-2.ec2.cloud.redislabs.com",
@@ -20,39 +25,46 @@ redis = get_redis_connection(
     decode_responses=True
 )
 
-""" Here are creating funtion or class that will convert the data into table form """
-class Product(HashModel):
-    name: str
+class Order(HashModel):
+    product_id: str
     price:float
+    fee:float
+    total:float
     quantity:int
+    status:str #pending, completed, refunded
 
-    """ to connect with the redis database """
     class Meta:
         database = redis
 
-""" So with the help of the FastAPI we don't have to create api we can just use it with @app.methods what we want """
-@app.get('/products')
-def all():
-    return [format(pk) for pk in Product.all_pks()] 
-
-""" This function will return the data that is stored into the data base """
-def format(pk:str):
-    product = Product.get(pk)
-    return{
-        'id':product.pk,
-        'name':product.name,
-        'price':product.price,
-        'quantity':product.quantity
-    }
-
-@app.post('/products')
-def create(product: Product):
-    return product.save()
-
-@app.get('/products/{pk}')
+@app.get('/orders/{pk}')
 def get(pk:str):
-    return Product.get(pk)
+    return Order.get(pk)
 
-@app.delete('/products/{pk}')
-def delete(pk:str):
-    return Product.delete(pk)
+
+@app.post('/orders')
+async def create(request: Request, backGround_task: BackgroundTasks): #here we will just sent ID and Quantity
+    body = await request.json()
+
+    req = requests.get('http://localhost:8000/products/%s' % body['id'])
+    product = req.json()
+
+    order = Order(
+        product_id=body['id'],
+        price=product['price'],
+        fee=0.2 * product['price'],
+        total=1.2 * product['price'],
+        quantity=body['quantity'],
+        status='pending'
+    )
+    order.save()
+
+    backGround_task.add_task(order_completed, order)
+
+    return order
+
+    return order
+
+def order_completed(order: Order):
+    time.sleep(15)
+    order.status = 'completed'
+    order.save()
