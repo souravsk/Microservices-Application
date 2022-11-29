@@ -62,8 +62,6 @@ async def create(request: Request, backGround_task: BackgroundTasks): #here we w
 
     return order
 
-    return order
-
 def order_completed(order: Order):
     time.sleep(15)
     order.status = 'completed'
