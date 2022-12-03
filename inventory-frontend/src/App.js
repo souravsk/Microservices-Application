@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"; 'react-router-d
 function App() {
   return <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Products}
+        <Route path="/" element={<Products/>}
       </Routes>
   </BrowserRouter>;
 }
