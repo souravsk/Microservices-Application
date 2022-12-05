@@ -7,10 +7,10 @@ export const ProductsCreate = () => {
     const [name, setName] = useState('');
     const [price, setPrice] = useState('');
     const [quantity, setQuantity] = useState('');
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
 
     const submit = async e => {
-        e.preventDafault();
+        e.preventDafault(); 
 
         await fetch('http://localhost:8000/products', {
             method: 'POST',
@@ -20,7 +20,7 @@ export const ProductsCreate = () => {
                 price,
                 quantity
             })
-        })
+        });
 
         await navigate(-1);
     }
